@@ -102,6 +102,7 @@ export function initUI(ctx) {
   buildLabel(ctx);
   wireControls(ctx);
   render(ctx);
+  if (ctx.game.solved) openWin(ctx);
   setInterval(() => updateTimer(ctx), 1000);
   updateTimer(ctx);
 }
