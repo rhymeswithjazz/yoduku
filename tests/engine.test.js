@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { mulberry32, hashString } from '../js/rng.js';
-import { makeBoard, neighbors, adjacent, parityOk, generatePath, pathIsValid, countSolutions } from '../js/engine.js';
+import { makeBoard, neighbors, adjacent, parityOk, generatePath, pathIsValid, countSolutions, selectClues } from '../js/engine.js';
 
 test('neighbors: center, edge, corner on 5x5', () => {
   const b = makeBoard(5);
@@ -101,4 +101,21 @@ test('countSolutions: dead-end prefix yields 0', () => {
   const cluesMap = new Map([[1, 0], [9, 8]]);
   assert.equal(countSolutions(b, cluesMap, [0, 1, 4], 2), 0);
   assert.ok(countSolutions(b, cluesMap, [0], 2) >= 1);
+});
+
+test('selectClues: both sets unique, 1 always present, normal extends hard', () => {
+  const b = makeBoard(5);
+  const rand = mulberry32(hashString('clue-test'));
+  const path = generatePath(b, rand);
+  const { hard, normal } = selectClues(b, path, 4, rand);
+
+  assert.ok(hard.has(1) && normal.has(1));
+  assert.ok(hard.size < 25, 'greedy removal actually removed clues');
+  assert.equal(normal.size, hard.size + 4);
+  for (const [num, cell] of hard) {
+    assert.equal(cell, path[num - 1]);
+    assert.equal(normal.get(num), cell);
+  }
+  assert.equal(countSolutions(b, hard, [path[0]], 2), 1);
+  assert.equal(countSolutions(b, normal, [path[0]], 2), 1);
 });

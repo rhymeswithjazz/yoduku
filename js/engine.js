@@ -135,3 +135,24 @@ export function countSolutions(board, clues, prefix, limit = 2) {
   step(prefix[prefix.length - 1], prefix.length);
   return count;
 }
+
+export function selectClues(board, path, extraCount, rand) {
+  const total = path.length;
+  const clueOf = (num) => path[num - 1];
+  const floor = Math.max(5, Math.ceil(total / 4));
+
+  const hard = new Map();
+  for (let num = 1; num <= total; num++) hard.set(num, clueOf(num));
+  const order = shuffle([...hard.keys()].filter((n) => n !== 1), rand);
+  for (const num of order) {
+    if (hard.size <= floor) break;
+    hard.delete(num);
+    if (countSolutions(board, hard, [clueOf(1)], 2) !== 1) hard.set(num, clueOf(num));
+  }
+
+  const removed = [];
+  for (let num = 2; num <= total; num++) if (!hard.has(num)) removed.push(num);
+  const normal = new Map(hard);
+  for (const num of shuffle(removed, rand).slice(0, extraCount)) normal.set(num, clueOf(num));
+  return { hard, normal };
+}
