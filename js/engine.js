@@ -38,3 +38,56 @@ export function parityOk(board) {
   const diff = Math.abs(dark - light);
   return board.cellCount % 2 === 0 ? diff === 0 : diff === 1;
 }
+
+export function generatePath(board, rand, budget = 200000) {
+  const total = board.cellCount;
+  const start = board.open[(rand() * board.open.length) | 0];
+  const path = [start];
+  const visited = new Set([start]);
+  const state = { nodes: 0 };
+  if (extendPath(board, rand, path, visited, total, state, budget)) return path;
+  return null;
+}
+
+function extendPath(board, rand, path, visited, total, state, budget) {
+  if (path.length === total) return true;
+  if (++state.nodes > budget) return false;
+  const head = path[path.length - 1];
+  const options = shuffle(neighbors(board, head).filter((c) => !visited.has(c)), rand);
+  for (const n of options) {
+    visited.add(n);
+    path.push(n);
+    if (remainderConnected(board, visited, total) &&
+        extendPath(board, rand, path, visited, total, state, budget)) return true;
+    path.pop();
+    visited.delete(n);
+  }
+  return false;
+}
+
+function remainderConnected(board, visited, total) {
+  const remaining = total - visited.size;
+  if (remaining === 0) return true;
+  let seed = -1;
+  for (const c of board.open) if (!visited.has(c)) { seed = c; break; }
+  const seen = new Set([seed]);
+  const stack = [seed];
+  while (stack.length) {
+    for (const n of neighbors(board, stack.pop())) {
+      if (!visited.has(n) && !seen.has(n)) { seen.add(n); stack.push(n); }
+    }
+  }
+  return seen.size === remaining;
+}
+
+export function pathIsValid(board, path) {
+  if (path.length !== board.cellCount) return false;
+  if (new Set(path).size !== path.length) return false;
+  for (const cell of path) {
+    if (cell < 0 || cell >= board.size * board.size || board.blocked.has(cell)) return false;
+  }
+  for (let i = 1; i < path.length; i++) {
+    if (!adjacent(board, path[i - 1], path[i])) return false;
+  }
+  return true;
+}
