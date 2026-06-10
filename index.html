@@ -17,6 +17,7 @@
         <button class="icon-btn" id="btn-help" aria-label="How to play">?</button>
         <h1 class="wordmark">Yoduku</h1>
         <div class="masthead-actions">
+          <button class="icon-btn" id="btn-leaderboard" aria-label="Leaderboard">♕</button>
           <button class="icon-btn" id="btn-stats" aria-label="Statistics">▦</button>
           <button class="icon-btn" id="btn-settings" aria-label="Settings">✦</button>
         </div>
@@ -65,6 +66,12 @@
     <div id="dist"></div>
   </dialog>
 
+  <dialog id="modal-leaderboard">
+    <button class="close" data-close aria-label="Close">✕</button>
+    <h2>Daily Leaderboard</h2>
+    <div id="leaderboard-list" class="leaderboard-list"></div>
+  </dialog>
+
   <dialog id="modal-settings">
     <button class="close" data-close aria-label="Close">✕</button>
     <h2>Settings</h2>
@@ -74,6 +81,15 @@
         <p>Fewer clues, same sky. Marks your share with&nbsp;*</p>
       </div>
       <input type="checkbox" id="hard-toggle">
+    </div>
+    <div class="account-panel">
+      <h3>Account</h3>
+      <p id="account-status">Local play only.</p>
+      <form id="account-form">
+        <input id="account-email" type="email" autocomplete="email" placeholder="email@example.com">
+        <button type="submit">Send link</button>
+      </form>
+      <button class="text-btn" id="btn-sign-out" type="button" hidden>Sign out</button>
     </div>
   </dialog>
 
@@ -89,6 +105,7 @@
     <textarea id="share-fallback" hidden rows="8" readonly></textarea>
   </dialog>
 
+  <script src="js/env.js"></script>
   <script type="module" src="js/main.js"></script>
 </body>
 </html>

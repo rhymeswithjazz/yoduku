@@ -199,6 +199,18 @@ dialog strong { font-size: .9rem; }
 .dist-row { display: flex; align-items: center; gap: 8px; margin: 4px 0; font-size: .75rem; color: var(--faint); }
 .dist-row .bar { background: var(--star); height: 14px; border-radius: 3px; min-width: 4px; }
 
+.leaderboard-list { display: grid; gap: 8px; margin-top: 10px; }
+.leaderboard-row {
+  display: grid; grid-template-columns: 28px 1fr auto auto;
+  align-items: center; gap: 10px;
+  padding: 9px 0; border-bottom: 1px solid var(--line);
+  font-size: .78rem;
+}
+.leaderboard-row .rank { color: var(--star); }
+.leaderboard-row .name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.leaderboard-row .meta { color: var(--faint); font-size: .7rem; }
+.leaderboard-empty { color: var(--faint); font-size: .8rem; line-height: 1.5; }
+
 .share-btn {
   width: 100%; margin-top: 14px; padding: 12px;
   background: var(--star); color: #1a1503;
@@ -210,3 +222,30 @@ dialog strong { font-size: .9rem; }
 #share-fallback { width: 100%; margin-top: 10px; background: var(--panel); color: var(--chalk); border: 1px solid var(--line); border-radius: 8px; font-family: inherit; font-size: .75rem; }
 .switch-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
 .switch-row input { width: 22px; height: 22px; accent-color: var(--star); }
+.account-panel {
+  margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--line);
+}
+.account-panel h3 {
+  margin: 0 0 8px;
+  font-size: .75rem; text-transform: uppercase; letter-spacing: .12em; color: var(--faint);
+}
+.account-panel form { display: flex; gap: 8px; margin-top: 10px; }
+.account-panel input {
+  min-width: 0; flex: 1; padding: 10px;
+  background: var(--panel); color: var(--chalk);
+  border: 1px solid var(--line); border-radius: 8px;
+  font-family: inherit; font-size: .75rem;
+}
+.account-panel button,
+.text-btn {
+  padding: 10px 12px;
+  background: transparent; color: var(--star);
+  border: 1px solid var(--star-soft); border-radius: 999px;
+  font-family: inherit; font-size: .7rem; text-transform: uppercase; letter-spacing: .08em;
+  cursor: pointer;
+}
+.text-btn { margin-top: 8px; }
+
+@media (max-width: 420px) {
+  .account-panel form { flex-direction: column; }
+}
