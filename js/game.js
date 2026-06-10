@@ -76,3 +76,57 @@ export function clickCell(game, cell) {
   }
   return { type: 'placed', num: nextNum };
 }
+
+export function lifeline(game) {
+  game.checks++;
+  return countSolutions(game.puzzle.board, clues(game), chainCells(game), 1) > 0;
+}
+
+export function setMode(game, mode) {
+  if (game.mode === mode || game.solved) return;
+  game.mode = mode;
+  const clueMap = clues(game);
+  const clueCells = new Set(clueMap.values());
+  for (const [num, cell] of [...game.player]) {
+    if (clueMap.has(num) || clueCells.has(cell)) game.player.delete(num);
+  }
+  const head = chainHead(game).num;
+  for (const n of [...game.player.keys()]) if (n > head) game.player.delete(n);
+}
+
+export function serialize(game, dateStr) {
+  return JSON.stringify({
+    date: dateStr,
+    mode: game.mode,
+    player: [...game.player],
+    checks: game.checks,
+    startedAt: game.startedAt,
+    solvedAt: game.solvedAt,
+    solved: game.solved,
+  });
+}
+
+export function restore(puzzle, json, dateStr) {
+  if (!json) return null;
+  try {
+    const data = JSON.parse(json);
+    if (!data || data.date !== dateStr) return null;
+    const game = createGame(puzzle, data.mode === 'hard' ? 'hard' : 'normal');
+    game.checks = data.checks | 0;
+    game.startedAt = data.startedAt ?? null;
+    game.solvedAt = data.solvedAt ?? null;
+    const clueMap = clues(game);
+    const clueCells = new Set(clueMap.values());
+    for (const [num, cell] of data.player ?? []) {
+      if (!Number.isInteger(num) || !Number.isInteger(cell)) return null;
+      if (clueMap.has(num) || clueCells.has(cell)) return null;
+      game.player.set(num, cell);
+    }
+    const head = chainHead(game).num;
+    for (const n of [...game.player.keys()]) if (n > head) game.player.delete(n);
+    game.solved = !!data.solved && chainHead(game).num === puzzle.board.cellCount;
+    return game;
+  } catch {
+    return null;
+  }
+}
