@@ -156,3 +156,63 @@ export function selectClues(board, path, extraCount, rand) {
   for (const num of shuffle(removed, rand).slice(0, extraCount)) normal.set(num, clueOf(num));
   return { hard, normal };
 }
+
+export function generatePuzzle(config, rand) {
+  for (;;) {
+    const blocked = pickHoles(config.size, config.holes, rand);
+
+    if (config.wormhole) {
+      const found = tryWormholeBoard(config.size, blocked, rand);
+      if (!found) continue;
+      return finishPuzzle(found.board, found.path, config, rand);
+    }
+
+    const board = makeBoard(config.size, blocked, null);
+    if (!parityOk(board)) continue;
+    const path = generatePath(board, rand);
+    if (!path) continue;
+    return finishPuzzle(board, path, config, rand);
+  }
+}
+
+function finishPuzzle(board, path, config, rand) {
+  const { hard, normal } = selectClues(board, path, config.extraClues, rand);
+  return { board, path, hardClues: hard, normalClues: normal };
+}
+
+function pickHoles(size, count, rand) {
+  if (count === 0) return [];
+  return shuffle([...Array(size * size).keys()], rand).slice(0, count);
+}
+
+function tryWormholeBoard(size, blocked, rand) {
+  for (let pick = 0; pick < 20; pick++) {
+    const wormhole = pickWormhole(size, blocked, rand);
+    const board = makeBoard(size, blocked, wormhole);
+    for (let attempt = 0; attempt < 200; attempt++) {
+      const path = generatePath(board, rand);
+      if (path && usesWormhole(path, wormhole)) return { board, path };
+    }
+  }
+  return null;
+}
+
+function pickWormhole(size, blocked, rand) {
+  const blockedSet = new Set(blocked);
+  for (;;) {
+    const a = (rand() * size * size) | 0;
+    const b = (rand() * size * size) | 0;
+    if (a === b || blockedSet.has(a) || blockedSet.has(b)) continue;
+    const dist = Math.abs(((a / size) | 0) - ((b / size) | 0)) + Math.abs((a % size) - (b % size));
+    if (dist >= 3) return [a, b];
+  }
+}
+
+export function usesWormhole(path, wormhole) {
+  const [a, b] = wormhole;
+  for (let i = 1; i < path.length; i++) {
+    const u = path[i - 1], v = path[i];
+    if ((u === a && v === b) || (u === b && v === a)) return true;
+  }
+  return false;
+}

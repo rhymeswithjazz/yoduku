@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { mulberry32, hashString } from '../js/rng.js';
-import { makeBoard, neighbors, adjacent, parityOk, generatePath, pathIsValid, countSolutions, selectClues } from '../js/engine.js';
+import { makeBoard, neighbors, adjacent, parityOk, generatePath, pathIsValid, countSolutions, selectClues, generatePuzzle, usesWormhole } from '../js/engine.js';
 
 test('neighbors: center, edge, corner on 5x5', () => {
   const b = makeBoard(5);
@@ -118,4 +118,39 @@ test('selectClues: both sets unique, 1 always present, normal extends hard', () 
   }
   assert.equal(countSolutions(b, hard, [path[0]], 2), 1);
   assert.equal(countSolutions(b, normal, [path[0]], 2), 1);
+});
+
+const CONFIGS = [
+  { size: 5, holes: 0, wormhole: false, extraClues: 6 },
+  { size: 5, holes: 0, wormhole: true, extraClues: 3 },
+  { size: 6, holes: 0, wormhole: false, extraClues: 4 },
+  { size: 6, holes: 3, wormhole: false, extraClues: 4 },
+  { size: 7, holes: 3, wormhole: false, extraClues: 5 },
+];
+
+test('generatePuzzle: valid unique puzzle for every config shape', () => {
+  for (const config of CONFIGS) {
+    const seed = hashString(`cfg-${config.size}-${config.holes}-${config.wormhole}`);
+    const puzzle = generatePuzzle(config, mulberry32(seed));
+    assert.ok(pathIsValid(puzzle.board, puzzle.path), `path valid for ${JSON.stringify(config)}`);
+    assert.equal(puzzle.board.blocked.size, config.holes);
+    if (config.wormhole) {
+      assert.ok(puzzle.board.wormhole, 'wormhole present');
+      assert.ok(usesWormhole(puzzle.path, puzzle.board.wormhole), 'solution traverses wormhole');
+    }
+    assert.equal(countSolutions(puzzle.board, puzzle.hardClues, [puzzle.path[0]], 2), 1);
+    assert.equal(countSolutions(puzzle.board, puzzle.normalClues, [puzzle.path[0]], 2), 1);
+    assert.equal(countSolutions(puzzle.board, puzzle.normalClues, puzzle.path.slice(0, 5), 1), 1,
+      'prefix of solution is lifeline-solvable');
+  }
+});
+
+test('generatePuzzle is deterministic per seed', () => {
+  const config = { size: 6, holes: 3, wormhole: false, extraClues: 4 };
+  const p1 = generatePuzzle(config, mulberry32(777));
+  const p2 = generatePuzzle(config, mulberry32(777));
+  assert.deepEqual(p1.path, p2.path);
+  assert.deepEqual([...p1.board.blocked].sort((a, b) => a - b), [...p2.board.blocked].sort((a, b) => a - b));
+  assert.deepEqual([...p1.hardClues], [...p2.hardClues]);
+  assert.deepEqual([...p1.normalClues], [...p2.normalClues]);
 });
