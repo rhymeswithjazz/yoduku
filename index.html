@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Yoduku — a daily path puzzle</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Azeret+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="sky" aria-hidden="true"></div>
+  <main class="app">
+    <header class="masthead">
+      <div class="masthead-row">
+        <button class="icon-btn" id="btn-help" aria-label="How to play">?</button>
+        <h1 class="wordmark">Yoduku</h1>
+        <div class="masthead-actions">
+          <button class="icon-btn" id="btn-stats" aria-label="Statistics">▦</button>
+          <button class="icon-btn" id="btn-settings" aria-label="Settings">✦</button>
+        </div>
+      </div>
+      <p class="dateline" id="puzzle-label"></p>
+    </header>
+
+    <section class="board-wrap">
+      <svg id="chain-svg" aria-hidden="true"></svg>
+      <div id="board" class="board" role="grid" aria-label="Puzzle grid"></div>
+    </section>
+
+    <footer class="controls">
+      <div class="timer" id="timer">0:00</div>
+      <button class="check-btn" id="btn-check">Still on track?</button>
+      <div class="checks-used" id="checks-used"></div>
+    </footer>
+
+    <div class="toast" id="toast" role="status"></div>
+  </main>
+
+  <dialog id="modal-help">
+    <button class="close" data-close aria-label="Close">✕</button>
+    <h2>How to play</h2>
+    <p>A hidden path visits every open cell once, numbered 1 to the end. Consecutive numbers always sit in touching cells — no diagonals.</p>
+    <ul>
+      <li>Tap a cell next to your chain's glowing head to place the next number.</li>
+      <li>Gold numbers are yours. Etched numbers are fixed clues your path must reach in order.</li>
+      <li>Tap one of your numbers to clear it and everything after it.</li>
+      <li>◉ cells are a wormhole — they count as touching.</li>
+      <li>Dark cells are void. The path goes around them.</li>
+    </ul>
+    <p>Fill the board to complete the constellation. "Still on track?" tells you whether your chain can still be completed — each use costs bragging rights.</p>
+  </dialog>
+
+  <dialog id="modal-stats">
+    <button class="close" data-close aria-label="Close">✕</button>
+    <h2>Statistics</h2>
+    <div class="stat-grid">
+      <div><span class="num" id="st-played">0</span><span class="lbl">Played</span></div>
+      <div><span class="num" id="st-pct">0</span><span class="lbl">Solve %</span></div>
+      <div><span class="num" id="st-streak">0</span><span class="lbl">Streak</span></div>
+      <div><span class="num" id="st-max">0</span><span class="lbl">Best</span></div>
+    </div>
+    <h3 class="dist-title">Checks used</h3>
+    <div id="dist"></div>
+  </dialog>
+
+  <dialog id="modal-settings">
+    <button class="close" data-close aria-label="Close">✕</button>
+    <h2>Settings</h2>
+    <div class="switch-row">
+      <div>
+        <strong>Hard mode</strong>
+        <p>Fewer clues, same sky. Marks your share with&nbsp;*</p>
+      </div>
+      <input type="checkbox" id="hard-toggle">
+    </div>
+  </dialog>
+
+  <dialog id="modal-win">
+    <button class="close" data-close aria-label="Close">✕</button>
+    <h2>Constellation complete</h2>
+    <div class="stat-grid cols-3">
+      <div><span class="num" id="win-time">0:00</span><span class="lbl">Time</span></div>
+      <div><span class="num" id="win-checks">0</span><span class="lbl">Checks</span></div>
+      <div><span class="num" id="win-streak">0</span><span class="lbl">Streak</span></div>
+    </div>
+    <button class="share-btn" id="btn-share">Share</button>
+    <textarea id="share-fallback" hidden rows="8" readonly></textarea>
+  </dialog>
+
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>
