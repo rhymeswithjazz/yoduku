@@ -24,6 +24,9 @@ export function puzzleNumber(dateStr) {
 }
 
 export function configFor(dateStr) {
+  // Deliberately offset-less (local noon), unlike the UTC forms elsewhere:
+  // the weekday must match the player's local calendar, and noon keeps it
+  // stable across every UTC offset.
   const weekday = new Date(dateStr + 'T12:00:00').getDay();
   return SCHEDULE[weekday];
 }
