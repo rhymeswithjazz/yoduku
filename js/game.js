@@ -103,6 +103,7 @@ export function serialize(game, dateStr) {
     startedAt: game.startedAt,
     solvedAt: game.solvedAt,
     solved: game.solved,
+    updatedAt: new Date().toISOString(),
   });
 }
 

@@ -1,5 +1,6 @@
 import { placedMap, chainHead, chainCells, clickCell, lifeline, setMode } from './game.js';
 import { shareText } from './share.js';
+import { getDailyLeaderboard, submissionFromGame } from './leaderboard.js';
 
 const VB = 1000; // svg viewBox edge
 const GAP = 15;  // VB * 1.5% — keep in sync with .board gap
@@ -119,7 +120,10 @@ function handleClick(ctx, cell) {
   ctx.save();
   render(ctx);
   updateTimer(ctx);
-  if (result.type === 'won') celebrate(ctx);
+  if (result.type === 'won') {
+    submitLeaderboardResult(ctx);
+    celebrate(ctx);
+  }
 }
 
 function celebrate(ctx) {
@@ -136,9 +140,11 @@ function wireControls(ctx) {
   document.getElementById('btn-check').addEventListener('click', () => onCheck(ctx));
   document.getElementById('btn-help').addEventListener('click', () =>
     document.getElementById('modal-help').showModal());
+  document.getElementById('btn-leaderboard').addEventListener('click', () => openLeaderboard(ctx));
   document.getElementById('btn-stats').addEventListener('click', () => openStats(ctx));
   document.getElementById('btn-settings').addEventListener('click', () => openSettings(ctx));
   document.getElementById('btn-share').addEventListener('click', () => share(ctx));
+  wireAccount(ctx);
   for (const btn of document.querySelectorAll('[data-close]')) {
     btn.addEventListener('click', () => btn.closest('dialog').close());
   }
@@ -166,8 +172,32 @@ function openStats(ctx) {
   document.getElementById('modal-stats').showModal();
 }
 
+async function openLeaderboard(ctx) {
+  const list = document.getElementById('leaderboard-list');
+  list.innerHTML = '<p class="leaderboard-empty">Loading...</p>';
+  document.getElementById('modal-leaderboard').showModal();
+  try {
+    const rows = await getDailyLeaderboard(ctx.auth, ctx.dateStr);
+    if (!rows.length) {
+      list.innerHTML = '<p class="leaderboard-empty">No signed-in solves yet today.</p>';
+      return;
+    }
+    list.innerHTML = rows.map((row, index) => `
+      <div class="leaderboard-row">
+        <span class="rank">${index + 1}</span>
+        <span class="name">${escapeHtml(row.display_name)}</span>
+        <span class="meta">${row.checks} ${row.checks === 1 ? 'check' : 'checks'}</span>
+        <span>${fmtTime(row.elapsed_seconds)}</span>
+      </div>
+    `).join('');
+  } catch {
+    list.innerHTML = '<p class="leaderboard-empty">Leaderboard is unavailable right now.</p>';
+  }
+}
+
 function openSettings(ctx) {
   document.getElementById('hard-toggle').checked = ctx.game.mode === 'hard';
+  updateAccountUI(ctx);
   document.getElementById('modal-settings').showModal();
 }
 
@@ -178,6 +208,53 @@ export function wireSettings(ctx) {
     render(ctx);
     toast(e.target.checked ? 'Hard mode: extra clues hidden' : 'Normal mode', '');
   });
+}
+
+function wireAccount(ctx) {
+  document.getElementById('account-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const email = document.getElementById('account-email').value.trim();
+    if (!email) return;
+    try {
+      await ctx.auth.signInWithOtp(email);
+      toast('Check your email for a sign-in link', 'good');
+    } catch {
+      toast('Sign-in is not configured', 'bad');
+    }
+  });
+  document.getElementById('btn-sign-out').addEventListener('click', async () => {
+    await ctx.auth.signOut();
+    location.reload();
+  });
+}
+
+function updateAccountUI(ctx) {
+  const status = document.getElementById('account-status');
+  const form = document.getElementById('account-form');
+  const signOut = document.getElementById('btn-sign-out');
+  if (!ctx.auth.enabled) {
+    status.textContent = 'Local play only. Add Supabase config to enable sign-in and leaderboard sync.';
+    form.hidden = true;
+    signOut.hidden = true;
+    return;
+  }
+  if (ctx.auth.user) {
+    status.textContent = `Signed in as ${ctx.auth.user.email ?? 'player'}.`;
+    form.hidden = true;
+    signOut.hidden = false;
+    return;
+  }
+  status.textContent = 'Sign in with an email magic link to sync stats and appear on the daily leaderboard.';
+  form.hidden = false;
+  signOut.hidden = true;
+}
+
+async function submitLeaderboardResult(ctx) {
+  if (!ctx.auth.user) return;
+  const displayName = ctx.auth.user.email?.split('@')[0] ?? 'Player';
+  const submission = submissionFromGame(ctx.game, ctx.dateStr, displayName);
+  const result = await ctx.submitSolve(submission).catch(() => ({ ok: false }));
+  if (result.ok) toast('Leaderboard updated', 'good');
 }
 
 function openWin(ctx) {
@@ -224,4 +301,13 @@ function updateTimer(ctx) {
 
 function fmtTime(s) {
   return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+}
+
+function escapeHtml(value) {
+  return String(value)
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#39;');
 }
