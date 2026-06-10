@@ -36,6 +36,8 @@ export function parityOk(board) {
   return board.cellCount % 2 === 0 ? diff === 0 : diff === 1;
 }
 
+// Returns null when the budget is exhausted or no path exists from the chosen
+// start — callers retry with fresh randomness (see generatePuzzle).
 export function generatePath(board, rand, budget = 200000) {
   const total = board.cellCount;
   const starts = startCandidates(board);
@@ -107,4 +109,29 @@ export function pathIsValid(board, path) {
     if (!adjacent(board, path[i - 1], path[i])) return false;
   }
   return true;
+}
+
+export function countSolutions(board, clues, prefix, limit = 2) {
+  const total = board.cellCount;
+  if (prefix.length === 0) return 0;
+  const cellClue = new Map();
+  for (const [num, cell] of clues) cellClue.set(cell, num);
+  const visited = new Set(prefix);
+  let count = 0;
+
+  function step(cell, num) {
+    if (num === total) { count++; return; }
+    const want = clues.get(num + 1);
+    for (const n of neighbors(board, cell)) {
+      if (count >= limit) return;
+      if (visited.has(n)) continue;
+      if (want !== undefined ? n !== want : cellClue.has(n)) continue;
+      visited.add(n);
+      if (remainderConnected(board, visited, total)) step(n, num + 1);
+      visited.delete(n);
+    }
+  }
+
+  step(prefix[prefix.length - 1], prefix.length);
+  return count;
 }

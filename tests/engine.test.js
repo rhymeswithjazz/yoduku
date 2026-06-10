@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { mulberry32, hashString } from '../js/rng.js';
-import { makeBoard, neighbors, adjacent, parityOk, generatePath, pathIsValid } from '../js/engine.js';
+import { makeBoard, neighbors, adjacent, parityOk, generatePath, pathIsValid, countSolutions } from '../js/engine.js';
 
 test('neighbors: center, edge, corner on 5x5', () => {
   const b = makeBoard(5);
@@ -72,4 +72,33 @@ test('generatePath succeeds across many seeds', () => {
     const p = generatePath(b, mulberry32(s));
     assert.ok(p && pathIsValid(b, p), `seed ${s}`);
   }
+});
+
+test('countSolutions: fully-clued board has exactly one solution', () => {
+  const b = makeBoard(5);
+  const path = generatePath(b, mulberry32(8));
+  const all = new Map(path.map((cell, i) => [i + 1, cell]));
+  assert.equal(countSolutions(b, all, [path[0]], 2), 1);
+});
+
+test('countSolutions: clue-1-only board hits the cap', () => {
+  const b = makeBoard(5);
+  const path = generatePath(b, mulberry32(8));
+  assert.equal(countSolutions(b, new Map([[1, path[0]]]), [path[0]], 2), 2);
+});
+
+test('countSolutions: prefix of the real solution stays solvable', () => {
+  const b = makeBoard(5);
+  const path = generatePath(b, mulberry32(8));
+  const all = new Map(path.map((cell, i) => [i + 1, cell]));
+  assert.equal(countSolutions(b, all, path.slice(0, 10), 2), 1);
+});
+
+test('countSolutions: dead-end prefix yields 0', () => {
+  // 3x3 grid, clue 1 at cell 0 and clue 9 at cell 8.
+  // Chain 1@0, 2@1, 3@4 can no longer cover all cells ending at 8.
+  const b = makeBoard(3);
+  const cluesMap = new Map([[1, 0], [9, 8]]);
+  assert.equal(countSolutions(b, cluesMap, [0, 1, 4], 2), 0);
+  assert.ok(countSolutions(b, cluesMap, [0], 2) >= 1);
 });
