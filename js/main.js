@@ -1,9 +1,9 @@
 import { hashString, mulberry32 } from './rng.js';
 import { generatePuzzle } from './engine.js';
 import { localDateString, puzzleNumber, configFor } from './daily.js';
-import { createGame, restore, serialize, clickCell } from './game.js';
+import { createGame, restore, serialize } from './game.js';
 import { emptyStats, recordPlayed, recordSolved } from './stats.js';
-import { buildBoard, buildLabel, render } from './ui.js';
+import { initUI, wireSettings } from './ui.js';
 
 const STATE_KEY = 'yoduku-state';
 const STATS_KEY = 'yoduku-stats';
@@ -25,7 +25,10 @@ const game = restore(puzzle, readStorage(STATE_KEY), dateStr) ?? createGame(puzz
 let stats = emptyStats();
 try {
   const raw = readStorage(STATS_KEY);
-  if (raw) stats = { ...emptyStats(), ...JSON.parse(raw) };
+  if (raw) {
+    const parsed = JSON.parse(raw);
+    stats = { ...emptyStats(), ...parsed, checkDist: { ...emptyStats().checkDist, ...(parsed.checkDist ?? {}) } };
+  }
 } catch { /* corrupted: reset */ }
 
 const ctx = {
@@ -41,10 +44,5 @@ const ctx = {
   },
 };
 
-buildBoard(ctx, (cell) => {
-  clickCell(ctx.game, cell); // interactions wired fully in Task 12
-  ctx.save();
-  render(ctx);
-});
-buildLabel(ctx);
-render(ctx);
+initUI(ctx);
+wireSettings(ctx);

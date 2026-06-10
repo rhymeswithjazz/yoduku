@@ -1,4 +1,5 @@
-import { placedMap, chainHead, chainCells } from './game.js';
+import { placedMap, chainHead, chainCells, clickCell, lifeline, setMode } from './game.js';
+import { shareText } from './share.js';
 
 const VB = 1000; // svg viewBox edge
 const GAP = 15;  // VB * 1.5% — keep in sync with .board gap
@@ -94,4 +95,132 @@ export function buildLabel(ctx) {
   if (board.blocked.size) tags.push('obstructed sky');
   document.getElementById('puzzle-label').textContent =
     `No. ${ctx.number} · ${fmt}${tags.length ? ' · ' + tags.join(' · ') : ''}`;
+}
+
+export function initUI(ctx) {
+  buildBoard(ctx, (cell) => handleClick(ctx, cell));
+  buildLabel(ctx);
+  wireControls(ctx);
+  render(ctx);
+  setInterval(() => updateTimer(ctx), 1000);
+  updateTimer(ctx);
+}
+
+function handleClick(ctx, cell) {
+  const result = clickCell(ctx.game, cell);
+  if (result.type === 'rejected') {
+    const btn = cellEl(cell);
+    btn.classList.add('shake');
+    setTimeout(() => btn.classList.remove('shake'), 300);
+    return;
+  }
+  if (result.type === 'ignored') return;
+  ctx.save();
+  render(ctx);
+  updateTimer(ctx);
+  if (result.type === 'won') celebrate(ctx);
+}
+
+function celebrate(ctx) {
+  const placed = placedMap(ctx.game);
+  for (const [num, info] of placed) {
+    const btn = cellEl(info.cell);
+    btn.style.animationDelay = `${num * 28}ms`;
+    btn.classList.add('won');
+  }
+  setTimeout(() => openWin(ctx), placed.size * 28 + 900);
+}
+
+function wireControls(ctx) {
+  document.getElementById('btn-check').addEventListener('click', () => onCheck(ctx));
+  document.getElementById('btn-help').addEventListener('click', () =>
+    document.getElementById('modal-help').showModal());
+  document.getElementById('btn-stats').addEventListener('click', () => openStats(ctx));
+  document.getElementById('btn-settings').addEventListener('click', () => openSettings(ctx));
+  document.getElementById('btn-share').addEventListener('click', () => share(ctx));
+  for (const btn of document.querySelectorAll('[data-close]')) {
+    btn.addEventListener('click', () => btn.closest('dialog').close());
+  }
+}
+
+function onCheck(ctx) {
+  if (ctx.game.solved) return;
+  if (ctx.game.player.size === 0) { toast('Place a number first', ''); return; }
+  const ok = lifeline(ctx.game);
+  ctx.save();
+  render(ctx);
+  toast(ok ? 'Still charted — this can be completed' : 'Dead end — back up', ok ? 'good' : 'bad');
+}
+
+function openStats(ctx) {
+  const s = ctx.stats;
+  document.getElementById('st-played').textContent = s.played;
+  document.getElementById('st-pct').textContent = s.played ? Math.round((s.solved / s.played) * 100) : 0;
+  document.getElementById('st-streak').textContent = s.currentStreak;
+  document.getElementById('st-max').textContent = s.maxStreak;
+  const max = Math.max(1, ...Object.values(s.checkDist));
+  document.getElementById('dist').innerHTML = ['0', '1', '2', '3+'].map((k) =>
+    `<div class="dist-row"><span>${k}</span><div class="bar" style="width:${(s.checkDist[k] / max) * 100}%"></div><span>${s.checkDist[k]}</span></div>`
+  ).join('');
+  document.getElementById('modal-stats').showModal();
+}
+
+function openSettings(ctx) {
+  document.getElementById('hard-toggle').checked = ctx.game.mode === 'hard';
+  document.getElementById('modal-settings').showModal();
+}
+
+export function wireSettings(ctx) {
+  document.getElementById('hard-toggle').addEventListener('change', (e) => {
+    setMode(ctx.game, e.target.checked ? 'hard' : 'normal');
+    ctx.save();
+    render(ctx);
+    toast(e.target.checked ? 'Hard mode: extra clues hidden' : 'Normal mode', '');
+  });
+}
+
+function openWin(ctx) {
+  const g = ctx.game;
+  const seconds = Math.max(0, Math.round((g.solvedAt - g.startedAt) / 1000));
+  document.getElementById('win-time').textContent = fmtTime(seconds);
+  document.getElementById('win-checks').textContent = g.checks;
+  document.getElementById('win-streak').textContent = ctx.stats.currentStreak;
+  document.getElementById('modal-win').showModal();
+}
+
+async function share(ctx) {
+  const g = ctx.game;
+  const seconds = Math.max(0, Math.round((g.solvedAt - g.startedAt) / 1000));
+  const text = shareText(g.puzzle, ctx.number, {
+    solved: true, seconds, checks: g.checks, hard: g.mode === 'hard',
+  });
+  try {
+    await navigator.clipboard.writeText(text);
+    toast('Copied to clipboard', 'good');
+  } catch {
+    const box = document.getElementById('share-fallback');
+    box.value = text;
+    box.hidden = false;
+    box.select();
+  }
+}
+
+let toastTimer;
+function toast(msg, kind) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = `toast show ${kind}`;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 2200);
+}
+
+function updateTimer(ctx) {
+  const g = ctx.game;
+  let secs = 0;
+  if (g.startedAt) secs = Math.max(0, Math.round(((g.solved ? g.solvedAt : Date.now()) - g.startedAt) / 1000));
+  document.getElementById('timer').textContent = fmtTime(secs);
+}
+
+function fmtTime(s) {
+  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
 }
