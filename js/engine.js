@@ -31,22 +31,39 @@ export function adjacent(board, a, b) {
 export function parityOk(board) {
   if (board.wormhole) return true; // wormhole may join same-colored cells
   let dark = 0, light = 0;
-  for (const cell of board.open) {
-    const r = (cell / board.size) | 0;
-    if ((r + (cell % board.size)) % 2 === 0) dark++; else light++;
-  }
+  for (const cell of board.open) (cellColor(board, cell) === 0 ? dark++ : light++);
   const diff = Math.abs(dark - light);
   return board.cellCount % 2 === 0 ? diff === 0 : diff === 1;
 }
 
 export function generatePath(board, rand, budget = 200000) {
   const total = board.cellCount;
-  const start = board.open[(rand() * board.open.length) | 0];
+  const starts = startCandidates(board);
+  const start = starts[(rand() * starts.length) | 0];
   const path = [start];
   const visited = new Set([start]);
   const state = { nodes: 0 };
   if (extendPath(board, rand, path, visited, total, state, budget)) return path;
   return null;
+}
+
+// On a bipartite grid (no wormhole), a Hamiltonian path over an odd number of
+// cells must start and end on the majority color; with unequal colors and an
+// even count no path exists at all (parityOk catches that). Restricting starts
+// to the majority color turns ~half of all attempts from guaranteed failures
+// into hits.
+function startCandidates(board) {
+  if (board.wormhole) return board.open;
+  let dark = 0, light = 0;
+  for (const cell of board.open) (cellColor(board, cell) === 0 ? dark++ : light++);
+  if (dark === light) return board.open;
+  const majority = dark > light ? 0 : 1;
+  return board.open.filter((cell) => cellColor(board, cell) === majority);
+}
+
+function cellColor(board, cell) {
+  const r = (cell / board.size) | 0;
+  return (r + (cell % board.size)) % 2;
 }
 
 function extendPath(board, rand, path, visited, total, state, budget) {

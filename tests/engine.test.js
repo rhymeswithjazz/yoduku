@@ -36,32 +36,40 @@ test('parityOk: checkerboard balance', () => {
 
 test('generatePath: valid Hamiltonian path on plain 5x5', () => {
   const b = makeBoard(5);
-  const p = generatePath(b, mulberry32(0));
+  const p = generatePath(b, mulberry32(42));
   assert.ok(p);
   assert.ok(pathIsValid(b, p));
 });
 
 test('generatePath: works with holes and with a wormhole', () => {
   const holed = makeBoard(6, [0, 8, 21]);
-  const p1 = generatePath(holed, mulberry32(0));
+  const p1 = generatePath(holed, mulberry32(1));
   assert.ok(p1 && pathIsValid(holed, p1));
   assert.equal(p1.length, 33);
 
   const wormy = makeBoard(5, [], [2, 22]);
-  const p2 = generatePath(wormy, mulberry32(0));
+  const p2 = generatePath(wormy, mulberry32(5));
   assert.ok(p2 && pathIsValid(wormy, p2));
 });
 
 test('generatePath is deterministic per seed', () => {
   const b = makeBoard(7);
-  assert.deepEqual(generatePath(b, mulberry32(0)), generatePath(b, mulberry32(0)));
+  assert.deepEqual(generatePath(b, mulberry32(99)), generatePath(b, mulberry32(99)));
 });
 
 test('pathIsValid rejects bad paths', () => {
   const b = makeBoard(5);
-  const good = generatePath(b, mulberry32(0));
+  const good = generatePath(b, mulberry32(3));
   assert.ok(!pathIsValid(b, good.slice(1)));            // wrong length
   assert.ok(!pathIsValid(b, [...Array(25).keys()]));    // 0..24 row-major: cell 4 -> 5 not adjacent
   const dup = good.slice(); dup[3] = dup[5];
   assert.ok(!pathIsValid(b, dup));                      // duplicate cell
+});
+
+test('generatePath succeeds across many seeds', () => {
+  const b = makeBoard(5);
+  for (let s = 0; s < 50; s++) {
+    const p = generatePath(b, mulberry32(s));
+    assert.ok(p && pathIsValid(b, p), `seed ${s}`);
+  }
 });
