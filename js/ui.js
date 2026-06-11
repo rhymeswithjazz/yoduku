@@ -218,8 +218,9 @@ function wireAccount(ctx) {
     try {
       await ctx.auth.signInWithOtp(email);
       toast('Check your email for a sign-in link', 'good');
-    } catch {
-      toast('Sign-in is not configured', 'bad');
+    } catch (error) {
+      console.error('Magic link sign-in failed:', error);
+      toast(error?.message || 'Sign-in failed', 'bad');
     }
   });
   document.getElementById('btn-sign-out').addEventListener('click', async () => {

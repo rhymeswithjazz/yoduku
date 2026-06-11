@@ -1,4 +1,4 @@
 window.YODUKU_CONFIG = {
-  SUPABASE_URL: 'cjxunkgyrfebhegpebwa.supabase.co',
+  SUPABASE_URL: 'https://cjxunkgyrfebhegpebwa.supabase.co',
   SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNqeHVua2d5cmZlYmhlZ3BlYndhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODExMjQzMTEsImV4cCI6MjA5NjcwMDMxMX0.M_QDwDNvsXK9tEAckMvgzGZNzIM2ncZTFBi4Nc5KuxQ',
 };
