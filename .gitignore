@@ -3,4 +3,5 @@ node_modules
 .vercel
 .claude
 supabase/.temp
+**/.temp
 .env
